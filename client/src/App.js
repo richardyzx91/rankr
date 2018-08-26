@@ -45,7 +45,7 @@ class App extends Component {
   fetchRankings() {
     fetch("/data")
     .then(response => response.json())
-    .then(data => 
+    .then(data => //this.setState({rb: data})
       this.setState({
         rb: data.rb,
         wr: data.wr,
