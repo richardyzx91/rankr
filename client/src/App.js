@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { SortableContainer, SortableElement, SortableHandle, arrayMove } from 'react-sortable-hoc';
 import './App.css';
+import axios from 'axios';
 
 const DragHandle = SortableHandle(() => 
   <span>
@@ -36,6 +37,9 @@ class App extends Component {
       te: [],
       qb: []
     };
+
+    this.fetchRankings = this.fetchRankings.bind(this);
+    this.handleUpload = this.handleUpload.bind(this);
   }
 
   componentDidMount(){
@@ -43,16 +47,39 @@ class App extends Component {
   }
 
   fetchRankings() {
-    fetch("/data")
-    .then(response => response.json())
-    .then(data => //this.setState({rb: data})
-      this.setState({
-        rb: data.rb,
-        wr: data.wr,
-        te: data.te,
-        qb: data.qb
-      }, () => console.log("Data fetched!"))
-    );
+    axios.get('/data')
+      .then(response => {
+        console.log(response.data.rb);
+        console.log(response.data.wr);
+        this.setState({
+          rb: response.data.rb,
+          wr: response.data.wr,
+          te: response.data.te,
+          qb: response.data.qb
+        });
+      });
+  }
+
+  handleUpload(e) {
+    e.preventDefault();
+
+    var data = new FormData();
+    console.log("We're in the upload method");
+
+    data.append('file', this.uploadInput.files[0]);
+
+    axios.post("/upload-csv", data)
+      .then(() => {
+        console.log("Uploaded!");
+      });
+
+    this.fetchRankings(); 
+  }
+  
+  updateRankings(updatedList, position){
+    // const data = { "position": position, "list": updatedList };
+
+    // axios.put("/data", data);
   }
 
   onRbSortEnd = ({oldIndex, newIndex}) => {
@@ -83,28 +110,39 @@ class App extends Component {
     return(
       <div>
         <table className="list-table">
-          <tr className="list-table-header-row">
-            <th>Running Backs</th>
-            <th>Wide Receivers</th>
-            <th>Tight Ends</th>
-            <th>Quarterbacks</th>
-          </tr>
+          <tbody>
+            <tr className="list-table-header-row">
+              <th>Running Backs</th>
+              <th>Wide Receivers</th>
+              <th>Tight Ends</th>
+              <th>Quarterbacks</th>
+            </tr>
 
-          <tr className="list-table-row">
-            <td>
-              <SortableList items={this.state.rb} onSortEnd={this.onRbSortEnd} />
-            </td>
-            <td>
-              <SortableList items={this.state.wr} onSortEnd={this.onWrSortEnd} />
-            </td>
-            <td>
-              <SortableList items={this.state.te} onSortEnd={this.onTeSortEnd} />
-            </td>
-            <td>
-              <SortableList items={this.state.qb} onSortEnd={this.onQbSortEnd} />
-            </td>
-          </tr>
+            <tr className="list-table-row">
+              <td>
+                <SortableList items={this.state.rb} onSortEnd={this.onRbSortEnd} />
+                <form onSubmit={this.updateRankings(this.state.rb, "rb")}><button>Save</button></form>
+              </td>
+              <td>
+                <SortableList items={this.state.wr} onSortEnd={this.onWrSortEnd} />
+                <form onSubmit={this.updateRankings(this.state.wr, "wr")}><button>Save</button></form>
+              </td>
+              <td>
+                <SortableList items={this.state.te} onSortEnd={this.onTeSortEnd} />
+                <form onSubmit={this.updateRankings(this.state.te, "te")}><button>Save</button></form>
+              </td>
+              <td>
+                <SortableList items={this.state.qb} onSortEnd={this.onQbSortEnd} />
+                <form onSubmit={this.updateRankings(this.state.qb, "qb")}><button>Save</button></form>
+              </td>
+            </tr>
+          </tbody>
         </table>
+
+        <form onSubmit={this.handleUpload}>
+          <input ref={(ref) => {this.uploadInput = ref; }} type = "file" id="fileUpload" name="fileUpload" />
+          <button>Upload</button>
+        </form>
       </div>
     );
   }
